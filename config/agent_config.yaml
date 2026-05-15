@@ -1,0 +1,19 @@
+quantum_agent:
+  model: "gpt-4o"
+  temperature: 0.1
+  max_iterations: 15
+  tools:
+    - web_search
+    - code_execution
+    - file_manager
+  
+memory:
+  persist_directory: "./chroma_db"
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  
+orchestrator:
+  agents:
+    - researcher
+    - analyst
+    - writer
+    - coder
