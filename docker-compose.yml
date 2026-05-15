@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  agent-space:
+    build: .
+    ports:
+      - "8501:8501"  # Streamlit
+      - "8000:8000"  # FastAPI
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./chroma_db:/app/chroma_db
+    depends_on:
+      - chroma
+  
+  chroma:
+    image: chromadb/chroma:latest
+    volumes:
+      - chroma_data:/chromadb/chroma
+  
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  chroma_data:
