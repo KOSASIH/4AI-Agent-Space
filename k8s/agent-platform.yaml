@@ -1,0 +1,94 @@
+---
+# 🌌 Complete Kubernetes Agent Platform
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-agent-space
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agent-config
+  namespace: ai-agent-space
+data:
+  agent_config.yaml: |
+    quantum_agent:
+      model: "gpt-4o"
+      max_workers: 50
+    autoscaler:
+      min_replicas: 3
+      max_replicas: 100
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-orchestrator
+  namespace: ai-agent-space
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: agent-orchestrator
+  template:
+    metadata:
+      labels:
+        app: agent-orchestrator
+    spec:
+      containers:
+      - name: orchestrator
+        image: kosasih/4ai-agent-space:latest
+        command: ["uvicorn", "src.api.platform_api:app"]
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agent-secrets
+              key: openai-key
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "8Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+  namespace: ai-agent-space
+spec:
+  selector:
+    app: agent-orchestrator
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agent-autoscaler
+  namespace: ai-agent-space
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agent-orchestrator
+  minReplicas: 3
+  maxReplicas: 100
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
